@@ -108,7 +108,7 @@
 // }
 
 // --------File handling------------
-// const std = @import("std");
+const std = @import("std");
 
 // pub fn main(init: std.process.Init) !void {
 //     const io = init.io;
@@ -133,96 +133,138 @@
 //     const io
 // }
 
-// pub fn main(init: std.process.Init) !void {
-//     // Read CLI argument
-
-//     var args = try init.minimal.args.iterateAllocator(init.gpa);
-//     defer args.deinit();
-
-//     // std.debug.print("All arguments {}", .{args});
-
-//     _ = args.skip(); // skip first filename
-
-//     // / without ORELSE cli parsing
-//     // while (args.next()) |arg| {
-//     //     std.debug.print("All arguments {s} \n", .{arg});
-//     // }
-
-//     // ORELSE OPTIONAL HANDLING
-//     const path = args.next() orelse {
-//         std.debug.print("<Missing : File not found!> \n", .{});
-//         return;
-//     };
-
-//     std.debug.print("File Path {s} \n", .{path});
-
-//     // then open file
-//     const io = init.io;
-//     const cwd = std.Io.Dir.cwd();
-//     // const gpa = init.gpa;
-
-//     const file = try cwd.openFile(io, path, .{});
-//     defer file.close(io);
-
-//     // 4kb OS MEMORY PAGE
-//     var file_buf: [4096]u8 = undefined;
-//     // var reader = file.reader(io, &file_buf);
-//     const reader = file.reader(io, &file_buf);
-
-//     var lineCount: i32 = 0;
-
-//     while (true) {}
-
-//     std.debug.print("{}\n", .{reader});
-
-//     // const data = try reader.interface.readAlloc(gpa, 12);
-//     // const data = try reader.interface.readAlloc(gpa, 44);
-//     // defer gpa.free(data);
-
-//     // std.debug.print("{s}\n", .{data});
-// }
-
-const std = @import("std");
-
 pub fn main(init: std.process.Init) !void {
+    // Read CLI argument
+
     var args = try init.minimal.args.iterateAllocator(init.gpa);
     defer args.deinit();
 
-    _ = args.skip(); // skip executable name
+    // std.debug.print("All arguments {}", .{args});
 
+    _ = args.skip(); // skip first filename
+
+    // / without ORELSE cli parsing
+    // while (args.next()) |arg| {
+    //     std.debug.print("All arguments {s} \n", .{arg});
+    // }
+
+    // ORELSE OPTIONAL HANDLING
     const path = args.next() orelse {
-        std.debug.print("Usage: zstats <file>\n", .{});
+        std.debug.print("<Missing : File not found!> \n", .{});
         return;
     };
 
+    std.debug.print("File Path {s} \n", .{path});
+
+    // then open file
     const io = init.io;
     const cwd = std.Io.Dir.cwd();
+    // const gpa = init.gpa;
 
-    var file = try cwd.openFile(io, path, .{});
+    const file = try cwd.openFile(io, path, .{});
     defer file.close(io);
 
+    // 4kb OS MEMORY PAGE
     var file_buf: [4096]u8 = undefined;
-    var reader = file.readerStreaming(io, &file_buf);
+    // var reader = file.reader(io, &file_buf);
+    const reader = file.reader(io, &file_buf);
 
-    var buffer: [1024]u8 = undefined;
-    var line_count: usize = 0;
-    var saw_any_bytes = false;
-    // var last_byte_was_newline = false;
+    var lineCount: i32 = 0;
 
-    while (true) {
-        const bytes_read = try reader.interface.readSliceShort(&buffer);
-        if (bytes_read == 0) break;
+    while (true) {}
 
-        saw_any_bytes = true;
-        for (buffer[0..bytes_read]) |byte| {
-            if (byte == '\n') line_count += 1;
-        }
-        // last_byte_was_newline = buffer[bytes_read - 1] == '\n';
-    }
+    std.debug.print("{}\n", .{reader});
 
-    // if (saw_any_bytes and !last_byte_was_newline) {
-    //     line_count += 1;
-    // }
+    // const data = try reader.interface.readAlloc(gpa, 12);
+    // const data = try reader.interface.readAlloc(gpa, 44);
+    // defer gpa.free(data);
 
-    std.debug.print("Lines: {}\n", .{line_count});
+    // std.debug.print("{s}\n", .{data});
 }
+
+diff --git a//home/keshav-g15/projects/linux-dellg15/2026/zig/zstats/src/main.zig b//home/keshav-g15/projects/linux-dellg15/2026/zig/zstats/src/main.zig
+new file mode 100644
+--- /dev/null
++++ b//home/keshav-g15/projects/linux-dellg15/2026/zig/zstats/src/main.zig
+@@ -0,0 +1,81 @@
++const std = @import("std");
++
++pub fn main(init: std.process.Init) !void {
++    var args = try init.minimal.args.iterateAllocator(init.gpa);
++    defer args.deinit();
++
++    _ = args.skip();
++
++    const path = args.next() orelse {
++        std.debug.print("usage: zstats <file>\n", .{});
++        return;
++    };
++
++    const line_count = try countLinesInFile(init.io, path);
++    std.debug.print("{s}: {} lines\n", .{ path, line_count });
++}
++
++fn countLinesInFile(io: std.Io, path: []const u8) !usize {
++    const cwd = std.Io.Dir.cwd();
++
++    var file = try cwd.openFile(io, path, .{});
++    defer file.close(io);
++
++    // Internal buffer owned by the file reader.
++    var file_buf: [4096]u8 = undefined;
++    var reader = file.readerStreaming(io, &file_buf);
++
++    // Application-level chunk buffer. We process one chunk at a time.
++    var chunk: [1024]u8 = undefined;
++
++    var line_count: usize = 0;
++    var saw_any_bytes = false;
++    var last_byte_was_newline = false;
++
++    while (true) {
++        const n = try reader.interface.readSliceShort(&chunk);
++        if (n == 0) break;
++
++        saw_any_bytes = true;
++        for (chunk[0..n]) |byte| {
++            if (byte == '\n') line_count += 1;
++        }
++        last_byte_was_newline = chunk[n - 1] == '\n';
++    }
++
++    if (saw_any_bytes and !last_byte_was_newline) {
++        line_count += 1;
++    }
++
++    return line_count;
++}
++
++test "counts lines in empty text" {
++    try std.testing.expectEqual(@as(usize, 0), countLinesFromSlice(""));
++}
++
++test "counts newline terminated lines" {
++    try std.testing.expectEqual(@as(usize, 3), countLinesFromSlice("a\nb\nc\n"));
++}
++
++test "counts final line without trailing newline" {
++    try std.testing.expectEqual(@as(usize, 3), countLinesFromSlice("a\nb\nc"));
++}
++
++fn countLinesFromSlice(data: []const u8) usize {
++    var line_count: usize = 0;
++    var saw_any_bytes = false;
++    var last_byte_was_newline = false;
++
++    for (data) |byte| {
++        saw_any_bytes = true;
++        if (byte == '\n') line_count += 1;
++        last_byte_was_newline = byte == '\n';
++    }
++
++    if (saw_any_bytes and !last_byte_was_newline) {
++        line_count += 1;
++    }
++
++    return line_count;
++}
