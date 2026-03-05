@@ -1,5 +1,6 @@
 const std = @import("std");
 
+// Program to count lines
 pub fn main(init: std.process.Init) !void {
 
     // Get file Path from cli
@@ -7,6 +8,18 @@ pub fn main(init: std.process.Init) !void {
     defer args.deinit();
 
     _ = args.skip(); // skip fileName
+
+    // Get file name
+    const FileName = args.next() orelse {
+        std.debug.print("Please provide a file name \n", .{});
+        return;
+    };
+
+    var it = std.mem.splitScalar(u8, FileName, '=');
+
+    const key = it.next().?;
+    const value = it.next().?;
+    std.debug.print("File {s}: {s} \n", .{ key, value });
 
     // Extract path -- dummy.txt
     const path = args.next() orelse {
@@ -31,7 +44,6 @@ pub fn main(init: std.process.Init) !void {
 
     // allocate 4kb for "OS Memory Page"
     // why is 1byte slower than 4kb ?
-    // chunk read
     var buffOSBucket: [4096]u8 = undefined;
 
     // read file (content into buffer in chunks)
@@ -41,36 +53,46 @@ pub fn main(init: std.process.Init) !void {
     // operation to check "\n" ASCII = 10
     // And count lines in fie
     // new buffer to find \n
-    var buffGlass: [64]u8 = undefined;
+    // chunk read
+    var buffGlass: [4096]u8 = undefined;
     var lineCount: usize = 0;
 
     // Last line then + 1
     var sawAnyBytes = false;
     var lastByteWasNewLine = false;
+    var totalBytes: usize = 0;
+
+    // Total bytes read (Get it from OS METADATA)
+    const stat = try file.stat(io);
+    const total_bytes = stat.size;
+
+    std.debug.print("stats of file Meta data {}\n", .{stat});
 
     while (true) {
-        const bytes_read = try reader.interface.readSliceShort(&buffGlass);
-        if (bytes_read == 0) break;
+        // Read bytes into glass
+        // return how much bytes were read into glass
+        const bytesRead = try reader.interface.readSliceShort(&buffGlass);
+        totalBytes += bytesRead;
+        if (bytesRead == 0) break;
 
         sawAnyBytes = true;
 
-        for (buffGlass[0..bytes_read]) |byte| {
+        for (buffGlass[0..bytesRead]) |byte| {
             if (byte == '\n') {
                 lineCount += 1;
             }
         }
 
-        lastByteWasNewLine = buffGlass[bytes_read - 1] == '\n';
+        lastByteWasNewLine = buffGlass[bytesRead - 1] == '\n';
     }
 
     if (sawAnyBytes and !lastByteWasNewLine) {
         lineCount += 1;
     }
 
+    std.debug.print("Total bytes from OS meta data  : {} \n", .{total_bytes});
+
+    std.debug.print("total bytes in file : {} \n", .{totalBytes});
+
     std.debug.print("Line in file : {} \n", .{lineCount});
 }
-
-// Read file From CLI
-// fn filePath(args) !void {}
-
-// GIT PUSH ISSUE

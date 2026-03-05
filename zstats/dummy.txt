@@ -6,6 +6,8 @@ upi
 
 
 q
-w
+w s
 git push issue
-local email change 
+asocal eamail change      
+o
+9
