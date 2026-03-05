@@ -10,7 +10,7 @@ pub fn main(init: std.process.Init) !void {
 
     // Extract path -- dummy.txt
     const path = args.next() orelse {
-        std.debug.print("File not found: <file>", .{});
+        std.debug.print("File not found: <file> \n", .{});
         return;
     };
 
@@ -24,7 +24,7 @@ pub fn main(init: std.process.Init) !void {
     // OS handles read/write -> we just borrow an interface via sys call ("Descriptor") to do IO on file, kernel does the real work (A tracks the position of read bytes,etc)
     // our program cant directly write on DISK(ssd,hdd)
     const file = cwd.openFile(io, path, .{}) catch |err| {
-        std.debug.print("Failed to open file ERR:<{}>", .{err});
+        std.debug.print("Failed to open file ERR:<{}> \n", .{err});
         return;
     };
     defer file.close(io);
@@ -44,18 +44,30 @@ pub fn main(init: std.process.Init) !void {
     var buffGlass: [64]u8 = undefined;
     var lineCount: usize = 0;
 
+    // Last line then + 1
+    var sawAnyBytes = false;
+    var lastByteWasNewLine = false;
+
     while (true) {
         const bytes_read = try reader.interface.readSliceShort(&buffGlass);
         if (bytes_read == 0) break;
+
+        sawAnyBytes = true;
 
         for (buffGlass[0..bytes_read]) |byte| {
             if (byte == '\n') {
                 lineCount += 1;
             }
         }
+
+        lastByteWasNewLine = buffGlass[bytes_read - 1] == '\n';
     }
 
-    std.debug.print("Line in file : {}", .{lineCount});
+    if (sawAnyBytes and !lastByteWasNewLine) {
+        lineCount += 1;
+    }
+
+    std.debug.print("Line in file : {} \n", .{lineCount});
 }
 
 // Read file From CLI
