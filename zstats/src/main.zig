@@ -1,228 +1,62 @@
-// const std = @import("std");
-// const Io = std.Io;
-
-// const zstats = @import("zstats");
-
-// pub fn main(init: std.process.Init) !void {
-//     // Prints to stderr, unbuffered, ignoring potential errors.
-//     std.debug.print("All your {s} are belong to us.\n", .{"codebase"});
-
-//     // This is appropriate for anything that lives as long as the process.
-//     const arena: std.mem.Allocator = init.arena.allocator();
-
-//     // Accessing command line arguments:
-//     const args = try init.minimal.args.toSlice(arena);
-//     for (args) |arg| {
-//         std.log.info("arg: {s}", .{arg});
-//     }
-
-//     // In order to do I/O operations need an `Io` instance.
-//     const io = init.io;
-
-//     // Stdout is for the actual output of your application, for example if you
-//     // are implementing gzip, then only the compressed bytes should be sent to
-//     // stdout, not any debugging messages.
-//     var stdout_buffer: [1024]u8 = undefined;
-//     var stdout_file_writer: Io.File.Writer = .init(.stdout(), io, &stdout_buffer);
-//     const stdout_writer = &stdout_file_writer.interface;
-
-//     try zstats.printAnotherMessage(stdout_writer);
-
-//     try stdout_writer.flush(); // Don't forget to flush!
-// }
-
-// test "simple test" {
-//     const gpa = std.testing.allocator;
-//     var list: std.ArrayList(i32) = .empty;
-//     defer list.deinit(gpa); // Try commenting this out and see if zig detects the memory leak!
-//     try list.append(gpa, 42);
-//     try std.testing.expectEqual(@as(i32, 42), list.pop());
-// }
-
-// test "fuzz example" {
-//     try std.testing.fuzz({}, testOne, .{});
-// }
-
-// fn testOne(context: void, smith: *std.testing.Smith) !void {
-//     _ = context;
-//     // Try passing `--fuzz` to `zig build test` and see if it manages to fail this test case!
-
-//     const gpa = std.testing.allocator;
-//     var list: std.ArrayList(u8) = .empty;
-//     defer list.deinit(gpa);
-//     while (!smith.eos()) switch (smith.value(enum { add_data, dup_data })) {
-//         .add_data => {
-//             const slice = try list.addManyAsSlice(gpa, smith.value(u4));
-//             smith.bytes(slice);
-//         },
-//         .dup_data => {
-//             if (list.items.len == 0) continue;
-//             if (list.items.len > std.math.maxInt(u32)) return error.SkipZigTest;
-//             const len = smith.valueRangeAtMost(u32, 1, @min(32, list.items.len));
-//             const off = smith.valueRangeAtMost(u32, 0, @intCast(list.items.len - len));
-//             try list.appendSlice(gpa, list.items[off..][0..len]);
-//             try std.testing.expectEqualSlices(
-//                 u8,
-//                 list.items[off..][0..len],
-//                 list.items[list.items.len - len ..],
-//             );
-//         },
-//     };
-// }
-
-// -------MY CODE-----------------
-//
-
-// const std = @import("std");
-
-// pub fn main(init: std.process.Init) !void {
-//     // Read cli
-
-//     //To read cli arguments
-//     var args = init.minimal.args.iterate();
-
-//     _ = args.skip(); // skip first file name
-
-//     while (args.next()) |arg| {
-//         std.debug.print("CLI arguments passed : {s}\n", .{arg});
-//     }
-
-//     // Slice iterator
-//     // var args = try init.minimal.args.iterateAllocator(init.gpa);
-//     // defer args.deinit();
-
-//     // _ = args.skip();
-
-//     // while (args.next()) |arg| {
-//     //     // formatting slice = {s}
-//     //     std.debug.print("see {s}\n", .{arg});
-//     // }
-
-//     // chuck memory
-//     //
-
-//     // READ FILE
-//     const cwd = std.fs.cwd();
-//     const file = try cwd.openFile("dummy.txt", .{});
-//     defer file.close();
-// }
-
-// --------File handling------------
-// const std = @import("std");
-
-// pub fn main(init: std.process.Init) !void {
-//     const io = init.io;
-//     const cwd = std.Io.Dir.cwd();
-
-//     var file = try cwd.createFile(io, "example.txt", .{ .read = true });
-//     defer file.close(io);
-
-//     try file.writeStreamingAll(io, "Hello File!");
-
-//     var read_buf: [100]u8 = undefined;
-//     var file_reader = file.reader(io, &read_buf);
-//     try file_reader.seekTo(0);
-
-//     var out: [100]u8 = undefined;
-//     const n = try file_reader.interface.readSliceShort(&out);
-//     std.debug.print("{s}\n", .{out[0..n]});
-// }
-
-// // Read file
-// fn readFile() void {
-//     const io
-// }
-
-// pub fn main(init: std.process.Init) !void {
-//     // Read CLI argument
-
-//     var args = try init.minimal.args.iterateAllocator(init.gpa);
-//     defer args.deinit();
-
-//     // std.debug.print("All arguments {}", .{args});
-
-//     _ = args.skip(); // skip first filename
-
-//     // / without ORELSE cli parsing
-//     // while (args.next()) |arg| {
-//     //     std.debug.print("All arguments {s} \n", .{arg});
-//     // }
-
-//     // ORELSE OPTIONAL HANDLING
-//     const path = args.next() orelse {
-//         std.debug.print("<Missing : File not found!> \n", .{});
-//         return;
-//     };
-
-//     std.debug.print("File Path {s} \n", .{path});
-
-//     // then open file
-//     const io = init.io;
-//     const cwd = std.Io.Dir.cwd();
-//     // const gpa = init.gpa;
-
-//     const file = try cwd.openFile(io, path, .{});
-//     defer file.close(io);
-
-//     // 4kb OS MEMORY PAGE
-//     var file_buf: [4096]u8 = undefined;
-//     // var reader = file.reader(io, &file_buf);
-//     const reader = file.reader(io, &file_buf);
-
-//     var lineCount: i32 = 0;
-
-//     while (true) {}
-
-//     std.debug.print("{}\n", .{reader});
-
-//     // const data = try reader.interface.readAlloc(gpa, 12);
-//     // const data = try reader.interface.readAlloc(gpa, 44);
-//     // defer gpa.free(data);
-
-//     // std.debug.print("{s}\n", .{data});
-// }
-
 const std = @import("std");
 
 pub fn main(init: std.process.Init) !void {
+
+    // Get file Path from cli
     var args = try init.minimal.args.iterateAllocator(init.gpa);
     defer args.deinit();
 
-    _ = args.skip(); // skip executable name
+    _ = args.skip(); // skip fileName
 
+    // Extract path -- dummy.txt
     const path = args.next() orelse {
-        std.debug.print("Usage: zstats <file>\n", .{});
+        std.debug.print("File not found: <file>", .{});
         return;
     };
 
+    // File handler
     const io = init.io;
     const cwd = std.Io.Dir.cwd();
 
-    var file = try cwd.openFile(io, path, .{});
+    // Open file and handle exception
+    // File in not the "content itself"
+    // file is OS file handle
+    // OS handles read/write -> we just borrow an interface via sys call ("Descriptor") to do IO on file, kernel does the real work (A tracks the position of read bytes,etc)
+    // our program cant directly write on DISK(ssd,hdd)
+    const file = cwd.openFile(io, path, .{}) catch |err| {
+        std.debug.print("Failed to open file ERR:<{}>", .{err});
+        return;
+    };
     defer file.close(io);
 
-    var file_buf: [4096]u8 = undefined;
-    var reader = file.readerStreaming(io, &file_buf);
+    // allocate 4kb for "OS Memory Page"
+    // why is 1byte slower than 4kb ?
+    // chunk read
+    var buffOSBucket: [4096]u8 = undefined;
 
-    var buffer: [1024]u8 = undefined;
-    var line_count: usize = 0;
-    var saw_any_bytes = false;
-    // var last_byte_was_newline = false;
+    // read file (content into buffer in chunks)
+    var reader = file.reader(io, &buffOSBucket);
+    // var reader = file.readStreaming(io, &buffOSBucket);
+
+    // operation to check "\n" ASCII = 10
+    // And count lines in fie
+    // new buffer to find \n
+    var buffGlass: [64]u8 = undefined;
+    var lineCount: usize = 0;
 
     while (true) {
-        const bytes_read = try reader.interface.readSliceShort(&buffer);
+        const bytes_read = try reader.interface.readSliceShort(&buffGlass);
         if (bytes_read == 0) break;
 
-        saw_any_bytes = true;
-        for (buffer[0..bytes_read]) |byte| {
-            if (byte == '\n') line_count += 1;
+        for (buffGlass[0..bytes_read]) |byte| {
+            if (byte == '\n') {
+                lineCount += 1;
+            }
         }
-        // last_byte_was_newline = buffer[bytes_read - 1] == '\n';
     }
 
-    // if (saw_any_bytes and !last_byte_was_newline) {
-    //     line_count += 1;
-    // }
-
-    std.debug.print("Lines: {}\n", .{line_count});
+    std.debug.print("Line in file : {}", .{lineCount});
 }
+
+// Read file From CLI
+// fn filePath(args) !void {}
