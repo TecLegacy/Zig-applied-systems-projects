@@ -68,12 +68,18 @@ pub fn main(init: std.process.Init) !void {
 
     std.debug.print("stats of file Meta data {}\n", .{stat});
 
+    // Count words in file
+    var word_count: usize = 0;
+    var in_word = false;
+
     while (true) {
         // Read bytes into glass
         // return how much bytes were read into glass
         const bytesRead = try reader.interface.readSliceShort(&buffGlass);
         totalBytes += bytesRead;
         if (bytesRead == 0) break;
+
+        countWordsInChunk(buffGlass[0..bytesRead], &in_word, &word_count);
 
         sawAnyBytes = true;
 
@@ -86,13 +92,29 @@ pub fn main(init: std.process.Init) !void {
         lastByteWasNewLine = buffGlass[bytesRead - 1] == '\n';
     }
 
+    if (in_word) word_count += 1;
+
     if (sawAnyBytes and !lastByteWasNewLine) {
         lineCount += 1;
     }
 
-    std.debug.print("Total bytes from OS meta data  : {} \n", .{total_bytes});
+    std.debug.print(
+        " meta bytes: {} \n read bytes: {} \n lines: {} \n words: {}\n",
+        .{ total_bytes, totalBytes, lineCount, word_count },
+    );
+}
 
-    std.debug.print("total bytes in file : {} \n", .{totalBytes});
-
-    std.debug.print("Line in file : {} \n", .{lineCount});
+// TODO: revisit the syntax -> got stuck in dereference
+fn countWordsInChunk(chunk: []const u8, in_word: *bool, word_count: *usize) void {
+    for (chunk) |b| {
+        const is_ws = b == ' ' or b == '\n' or b == '\t' or b == '\r';
+        if (is_ws) {
+            if (in_word.*) {
+                word_count.* += 1;
+                in_word.* = false;
+            }
+        } else {
+            in_word.* = true;
+        }
+    }
 }
