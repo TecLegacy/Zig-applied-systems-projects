@@ -72,6 +72,9 @@ pub fn main(init: std.process.Init) !void {
     var word_count: usize = 0;
     var in_word = false;
 
+    // Performance Testing
+    const start_file_read = std.Io.Clock.Timestamp.now(io, .awake);
+
     while (true) {
         // Read bytes into glass
         // return how much bytes were read into glass
@@ -92,6 +95,14 @@ pub fn main(init: std.process.Init) !void {
         lastByteWasNewLine = buffGlass[bytesRead - 1] == '\n';
     }
 
+    // performance test end
+    const elapsed = start_file_read.untilNow(io);
+    const elapsed_ns = elapsed.raw.nanoseconds;
+    const elapsed_ms = @as(f64, @floatFromInt(elapsed_ns)) / 1_000_000.0;
+    std.debug.print("read took {d:.3} ms\n", .{elapsed_ms});
+
+    // TODO: learn about through put with zig
+
     if (in_word) word_count += 1;
 
     if (sawAnyBytes and !lastByteWasNewLine) {
@@ -105,7 +116,7 @@ pub fn main(init: std.process.Init) !void {
 }
 
 // TODO: revisit the syntax -> got stuck in dereference
-fn countWordsInChunk(chunk: []const u8, in_word: *bool, word_count: *usize) void {
+pub fn countWordsInChunk(chunk: []const u8, in_word: *bool, word_count: *usize) void {
     for (chunk) |b| {
         const is_ws = b == ' ' or b == '\n' or b == '\t' or b == '\r';
         if (is_ws) {
