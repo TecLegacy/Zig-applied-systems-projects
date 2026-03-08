@@ -1,0 +1,11 @@
+INPUT format
+INFO User logged in
+WARN Disk almost full
+ERROR Database connection failed
+INFO User logged out
+
+
+OUTPUT Format Expect
+INFO: 2
+WARN: 1
+ERROR: 1
